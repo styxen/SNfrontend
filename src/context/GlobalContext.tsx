@@ -1,20 +1,15 @@
-import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useContext } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import toast, { Toaster } from 'react-hot-toast';
-import axios, { AxiosError } from 'axios';
+import { Toaster } from 'react-hot-toast';
+import { axiosRequest } from '../api/axios';
 
 export type Profile = {
   profileId: string;
   profileName: string;
-  profileStatus: string | null;
+  profileStatus: string;
   userId: string;
   imageId: string | null;
-};
-
-export type FetchProfileProps = {
-  method: 'get' | 'post' | 'delete' | 'patch' | 'put';
-  url: string;
-  formData?: FormData;
+  isFollowed: boolean;
 };
 
 type GlobalContextProviderProps = {
@@ -22,15 +17,27 @@ type GlobalContextProviderProps = {
 };
 
 type GlobalContext = {
-  setToken: React.Dispatch<React.SetStateAction<string>>;
-  setUserId: React.Dispatch<React.SetStateAction<string>>;
+  currentProfile: Profile;
+  setCurrentProfile: React.Dispatch<React.SetStateAction<Profile>>;
   token: string;
+  setToken: React.Dispatch<React.SetStateAction<string>>;
+  currentUserId: string;
+  setCurrentUserId: React.Dispatch<React.SetStateAction<string>>;
+  currentAvatarImageSrc: string;
+  setCurrentAvatarImageSrc: React.Dispatch<React.SetStateAction<string>>;
+  fetchProfile: ({ userId }: FetchProfileProps) => Promise<Profile>;
+  fetchImage: ({ imageId, imageParams }: FetchImageProps) => Promise<string>;
+};
+
+type FetchProfileProps = {
   userId: string;
-  fetchProfile: ({ method, url, formData }: FetchProfileProps) => Promise<Profile | undefined>;
-  fetchAvatarImage: (imageId: string | null | undefined) => Promise<string | undefined>;
-  myProfile: Profile;
-  myAvatarImageSrc: string;
-  setMyAvatarImageSrc: React.Dispatch<React.SetStateAction<string>>;
+  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
+};
+
+type FetchImageProps = {
+  imageId: string | null;
+  imageParams: 'original' | 'compressed';
+  setImageSrc: React.Dispatch<React.SetStateAction<string>>;
 };
 
 const GlobalContext = createContext({} as GlobalContext);
@@ -41,79 +48,52 @@ export const useGlobalContext = () => {
 
 export const GlobalContextProvider = ({ children }: GlobalContextProviderProps) => {
   const [token, setToken] = useLocalStorage('token', '');
-  const [userId, setUserId] = useLocalStorage('userId', '');
-  const [myProfile, setMyProfile] = useLocalStorage<Profile>('pofile', {} as Profile);
-  const [myAvatarImageSrc, setMyAvatarImageSrc] = useLocalStorage('myAvatarImageSrc', '');
+  const [currentUserId, setCurrentUserId] = useLocalStorage('userId', '');
+  const [currentProfile, setCurrentProfile] = useLocalStorage<Profile>('profile', {} as Profile);
+  const [currentAvatarImageSrc, setCurrentAvatarImageSrc] = useLocalStorage('avatarImageSrc', '');
 
-  const fetchProfile = async ({ method, url, formData }: FetchProfileProps): Promise<Profile | undefined> => {
-    try {
-      const response = await axios<Profile>({
-        method,
-        baseURL: process.env.REACT_APP_BASE_URL,
-        url,
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data.msg);
-      }
-      console.log(error);
-    }
-  };
-
-  const fetchAvatarImage = async (imageId: string | null | undefined): Promise<string | undefined> => {
-    try {
-      const response = await axios<ArrayBuffer>({
-        method: 'get',
-        baseURL: process.env.REACT_APP_BASE_URL,
-        url: `/images/original/${!imageId ? 'default' : imageId}`,
-        responseType: 'arraybuffer',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const imageBlob = new Blob([response.data], { type: response.headers['content-type'] });
-      const imageUrl = URL.createObjectURL(imageBlob);
-      return imageUrl;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data.msg);
-      }
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    if (!token) return;
-    fetchProfile({ method: 'get', url: `/profiles/${userId}` }).then((res) => {
-      if (!res) return;
-      setMyProfile(res);
-      fetchAvatarImage(res.imageId).then((res) => {
-        if (!res) return;
-        setMyAvatarImageSrc(res);
-      });
+  const fetchProfile = async ({ userId, setProfile }: FetchProfileProps): Promise<Profile> => {
+    const response = await axiosRequest<Profile>({
+      method: 'get',
+      url: `/profiles/${userId}`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-  }, [token]);
+
+    setProfile(response);
+    return response;
+  };
+
+  const fetchImage = async ({ imageId, imageParams, setImageSrc }: FetchImageProps): Promise<string> => {
+    const response = await axiosRequest<ArrayBuffer>({
+      method: 'get',
+      url: `/images/${imageParams}/${!imageId ? 'default' : imageId}`,
+      responseType: 'arraybuffer',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const imageBlob = new Blob([response]);
+    const imageUrl = URL.createObjectURL(imageBlob);
+    setImageSrc(imageUrl);
+    return imageUrl;
+  };
 
   return (
     <GlobalContext.Provider
       value={{
-        setToken,
-        setUserId,
+        currentProfile,
+        setCurrentProfile,
         token,
-        userId,
+        setToken,
+        currentUserId,
+        setCurrentUserId,
+        currentAvatarImageSrc,
+        setCurrentAvatarImageSrc,
         fetchProfile,
-        fetchAvatarImage,
-        myProfile,
-        myAvatarImageSrc,
-        setMyAvatarImageSrc,
+        fetchImage,
       }}
     >
       <Toaster position="top-center" reverseOrder={false} />

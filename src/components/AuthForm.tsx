@@ -1,9 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { useGlobalContext } from '../context/GlobalContext';
-import axios, { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import Button from './ui/Button';
+import { axiosRequest } from '../api/axios';
 
 type AuthFormProps = {
   authAction: 'login' | 'register';
@@ -14,36 +13,28 @@ type ResponseData = {
   userId: string;
 };
 
+type AuthData = {
+  userEmail: string;
+  userPassword: string;
+};
+
 const AuthForm = ({ authAction }: AuthFormProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { setToken, setUserId, userId } = useGlobalContext();
+  const { setToken, setCurrentUserId } = useGlobalContext();
+  const [authData, setAuthData] = useState<AuthData>({ userEmail: '', userPassword: '' });
   const navigate = useNavigate();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    try {
-      const response = await axios<ResponseData>({
-        method: 'post',
-        baseURL: process.env.REACT_APP_BASE_URL,
-        url: `/auth/${authAction}`,
-        data: {
-          userEmail: email,
-          userPassword: password,
-        },
-        headers: {},
-      });
+    const response = await axiosRequest<ResponseData>({
+      method: 'post',
+      url: `/auth/${authAction}`,
+      data: authData,
+    });
 
-      setToken(response.data.token);
-      setUserId(response.data.userId);
-      navigate(`/${userId}`);
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data.msg);
-      }
-      console.log(error);
-    }
+    setCurrentUserId(response.userId);
+    setToken(response.token);
+    navigate(`/`);
   };
 
   return (
@@ -59,8 +50,8 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
             type="email"
             autoComplete="email"
             required
-            onChange={(event) => setEmail(event.target.value)}
-            value={email}
+            onChange={(event) => setAuthData((data) => ({ ...data, userEmail: event.target.value }))}
+            value={authData.userEmail}
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           />
         </div>
@@ -79,15 +70,15 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
             type="password"
             autoComplete="current-password"
             required
-            onChange={(event) => setPassword(event.target.value)}
-            value={password}
+            onChange={(event) => setAuthData((data) => ({ ...data, userPassword: event.target.value }))}
+            value={authData.userPassword}
             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
           />
         </div>
       </div>
 
       <div>
-        <Button type="submit" className="max-w-sm mx-auto w-full">
+        <Button type="submit" className="mx-auto w-full max-w-sm">
           {authAction === 'login' ? 'Sign In' : 'Register'}
         </Button>
       </div>

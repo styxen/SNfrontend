@@ -1,30 +1,39 @@
 import { Link } from 'react-router-dom';
 import Button from './ui/Button';
 import { useGlobalContext } from '../context/GlobalContext';
+import { Bell } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 const NavBar = () => {
-  const { myAvatarImageSrc } = useGlobalContext();
+  const { currentProfile, fetchImage } = useGlobalContext();
+  const [avatarImageSrc, setAvatarImageSrc] = useState('');
+
+  useQuery({
+    queryKey: ['navbarAvatarImageSrc', { currentProfile }],
+    queryFn: () => fetchImage({ imageId: currentProfile.imageId, imageParams: 'original', setImageSrc: setAvatarImageSrc }),
+    enabled: !!currentProfile,
+  });
 
   const logOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('profile');
-    localStorage.removeItem('myAvatarImageSrc');
+    ['token', 'userId', 'profile', 'avatarImageSrc'].map((item) => localStorage.removeItem(item));
   };
 
   return (
-    <nav className="sticky container flex justify-between mx-auto bg-grey-lighter px-8 pt-6">
+    <nav className="container fixed z-50 mx-auto flex justify-between rounded-b-2xl bg-white px-8 py-3">
       <div>
         <Link to="/">
           <Button variant="ghost">home</Button>
         </Link>
         <Button variant="ghost">news</Button>
         <Button variant="ghost">chats</Button>
-        <Button variant="ghost">notifications</Button>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8">
-          <img className="w-full h-full rounded-full cursor-pointer" src={myAvatarImageSrc} alt="myAvatar" />
+        <Button variant="ghost" className="rounded-full px-2 py-1">
+          <Bell />
+        </Button>
+        <div className="h-8 w-8">
+          <img className="h-full w-full cursor-pointer rounded-full" src={avatarImageSrc} alt="myAvatar" />
         </div>
         <Link to="/auth/login">
           <Button onClick={logOut} variant="ghost">
