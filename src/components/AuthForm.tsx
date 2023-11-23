@@ -3,6 +3,7 @@ import { useGlobalContext } from '../context/GlobalContext';
 import { useNavigate } from 'react-router-dom';
 import Button from './ui/Button';
 import { axiosRequest } from '../api/axios';
+import { useMutation } from '@tanstack/react-query';
 
 type AuthFormProps = {
   authAction: 'login' | 'register';
@@ -19,13 +20,22 @@ type AuthData = {
 };
 
 const AuthForm = ({ authAction }: AuthFormProps) => {
-  const { setToken, setCurrentUserId } = useGlobalContext();
+  const { setCurrentUserId, setToken } = useGlobalContext();
   const [authData, setAuthData] = useState<AuthData>({ userEmail: '', userPassword: '' });
   const navigate = useNavigate();
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const authMutation = useMutation({
+    mutationFn: () => authRequest(),
+  });
+
+  const handleAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    authMutation.mutate();
+    navigate(`/`);
+  };
+
+  const authRequest = async () => {
     const response = await axiosRequest<ResponseData>({
       method: 'post',
       url: `/auth/${authAction}`,
@@ -34,11 +44,11 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
 
     setCurrentUserId(response.userId);
     setToken(response.token);
-    navigate(`/`);
+    return response;
   };
 
   return (
-    <form className="space-y-6" onSubmit={(event) => handleSubmit(event)} method="POST">
+    <form className="space-y-6" onSubmit={(event) => handleAuth(event)} method="POST">
       <div>
         <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
           Email address

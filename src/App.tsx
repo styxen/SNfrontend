@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MainPage from './pages/MainPage';
 import UserPage from './pages/UserPage';
+import NewsPage from './pages/NewsPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>
+        <Route path="/news" element={<NewsPage />} />
         <Route path="/:userId" element={<UserPage />} />
       </Routes>
     </GlobalContextProvider>

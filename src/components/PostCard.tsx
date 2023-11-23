@@ -1,4 +1,4 @@
-import { Heart, HeartCrack, MessageCircle } from 'lucide-react';
+import { Heart, HeartCrack, MessageCircle, Pencil, Save, XCircle } from 'lucide-react';
 import { useGlobalContext } from '../context/GlobalContext';
 import { PostData } from './PostContainer';
 import { useState } from 'react';
@@ -7,11 +7,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { axiosRequest } from '../api/axios';
 import PostForm from './PostForm';
 import { Link } from 'react-router-dom';
+import Button from './ui/Button';
 
 type PostCardProps = {
   post: PostData;
-  avatarImageSrc: string;
-  profileName: string;
 };
 
 type LikeData = {
@@ -25,17 +24,36 @@ export type PostUpdates = {
   imageId: string | null;
 };
 
-const PostCard = ({ post, avatarImageSrc, profileName }: PostCardProps) => {
-  const { userId, postEdited, postContent, createdAt, countComments, countLikes, isLiked, imageId } = post;
+const PostCard = ({ post }: PostCardProps) => {
+  const {
+    postId,
+    userId,
+    postEdited,
+    postContent,
+    createdAt,
+    updatedAt,
+    countComments,
+    countLikes,
+    isLiked,
+    imageId,
+    profileImageId,
+    profileName,
+  } = post;
+  const { fetchImage, token, currentUserId } = useGlobalContext();
   const [postUpdates, setPostUpdates] = useState<PostUpdates>({ postEdited, postContent, imageId });
   const [likes, setLikes] = useState<LikeData>({ count: countLikes, isLiked });
-  const { fetchImage, token } = useGlobalContext();
   const [postImageSrc, setPostImageSrc] = useState('');
+  const [avatarImageSrc, setAvatarImageSrc] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | undefined>(undefined);
   const [isHoverd, setIsHoverd] = useState(false);
   const [editPost, setEditPost] = useState(false);
 
   useQuery({
-    retry: 3,
+    queryKey: ['postAvatarImageSrc', postId, postUpdates],
+    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original', setImageSrc: setAvatarImageSrc }),
+  });
+
+  useQuery({
     queryKey: ['postImageSrc', { postImageId: postUpdates.imageId }],
     queryFn: () => fetchImage({ imageId: postUpdates.imageId, imageParams: 'compressed', setImageSrc: setPostImageSrc }),
     enabled: !!postUpdates.imageId,
@@ -43,6 +61,10 @@ const PostCard = ({ post, avatarImageSrc, profileName }: PostCardProps) => {
 
   const sendLikeMutation = useMutation({
     mutationFn: (method: 'post' | 'delete') => sendLike(method),
+  });
+
+  const updatePostMutation = useMutation({
+    mutationFn: (formData: FormData) => updatePost(formData),
   });
 
   const handleLike = () => {
@@ -69,6 +91,40 @@ const PostCard = ({ post, avatarImageSrc, profileName }: PostCardProps) => {
     return {};
   };
 
+  const handleUpdate = () => {
+    const formData = new FormData();
+    if (selectedImage !== undefined && selectedImage !== null) formData.append('file', selectedImage);
+    if (postContent !== postUpdates.postContent && postUpdates.postContent !== '') formData.append('postContent', postUpdates.postContent);
+    formData.append('postId', postId);
+
+    for (const value of formData.values()) {
+      console.log(value);
+    }
+
+    updatePostMutation.mutate(formData);
+    setEditPost(false);
+  };
+
+  const updatePost = async (formData: FormData) => {
+    const response = await axiosRequest<PostData>({
+      method: 'patch',
+      url: '/posts',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setPostUpdates({ postEdited: true, imageId: response.imageId, postContent: response.postContent });
+    return response;
+  };
+
+  const selectImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setSelectedImage(file);
+  };
+
   return (
     <div
       onMouseOver={() => setIsHoverd(true)}
@@ -84,20 +140,49 @@ const PostCard = ({ post, avatarImageSrc, profileName }: PostCardProps) => {
             <span className="cursor-pointer font-sans text-2xl font-bold">{profileName}</span>
           </Link>
         </div>
+        <div className="flex gap-2 px-3">
+          {editPost ? (
+            <>
+              <Button onClick={handleUpdate} size="sm" className="items-center rounded-full px-1.5 py-1">
+                <Save />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="items-center rounded-full px-1.5 py-1"
+                onClick={() => setEditPost((prev) => !prev)}
+              >
+                <XCircle />
+              </Button>
+            </>
+          ) : (
+            <>
+              {isHoverd && userId === currentUserId ? (
+                <Button
+                  onClick={() => setEditPost((prev) => !prev)}
+                  variant="ghost"
+                  size="sm"
+                  className="items-stretch rounded-full px-1.5 py-1"
+                >
+                  <Pencil />
+                </Button>
+              ) : null}
+            </>
+          )}
+        </div>
         <div className="flex items-stretch gap-3">
           <span>{postUpdates.postEdited ? 'edited' : 'created'}</span>
-          <div>{formatTimesAgo(new Date(createdAt))}</div>
+          <div>
+            {postUpdates.postEdited ? formatTimesAgo(new Date(!postEdited ? Date.now() : updatedAt)) : formatTimesAgo(new Date(createdAt))}
+          </div>
         </div>
       </div>
       <PostForm
-        post={post}
         editPost={editPost}
-        setEditPost={setEditPost}
         postUpdates={postUpdates}
         setPostUpdates={setPostUpdates}
-        userId={userId}
         postImageSrc={postImageSrc}
-        isHoverd={isHoverd}
+        selectImage={selectImage}
       />
       <div className="mx-5 flex justify-between">
         <div onClick={handleLike} className="flex cursor-pointer gap-2">

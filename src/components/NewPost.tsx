@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Save } from 'lucide-react';
+import { Heart, MessageCircle, Save, XCircle } from 'lucide-react';
 import Button from './ui/Button';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -58,7 +58,7 @@ const NewPost = ({ userId, profileName, avatarImageSrc, setNewPost, setCreateNew
 
   return (
     <div className="mx-auto grid w-full gap-5 overflow-hidden rounded-2xl bg-white px-8 py-6 shadow-lg">
-      <div className="flex">
+      <div className="flex justify-between">
         <div className="flex items-stretch gap-2">
           <Link to={`/${userId}`} replace>
             <img className="h-10 w-10 cursor-pointer rounded-full border-4 border-white" src={avatarImageSrc} alt="avatar" />
@@ -67,18 +67,26 @@ const NewPost = ({ userId, profileName, avatarImageSrc, setNewPost, setCreateNew
             <span className="cursor-pointer font-sans text-2xl font-bold">{profileName}</span>
           </Link>
         </div>
-      </div>
-      <div className="flex justify-between">
-        <div className="h-fit w-11/12 py-3">
-          <textarea
-            className={`min-h-min w-full resize-y border-transparent text-2xl ring-opacity-100 focus:border-transparent focus:ring-0`}
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-          />
+        <div className="flex items-stretch gap-2">
+          <Button onClick={handleCreate} size="sm" className="items-center rounded-full px-1.5 py-1">
+            <Save />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="items-center rounded-full px-1.5 py-1"
+            onClick={() => setCreateNewPost((prev) => !prev)}
+          >
+            <XCircle />
+          </Button>
         </div>
-        <Button onClick={handleCreate} size="sm" className="items-center rounded-full px-1.5 py-1">
-          <Save />
-        </Button>
+      </div>
+      <div className="h-fit py-3">
+        <textarea
+          className={`min-h-min w-full resize-y border-transparent text-2xl ring-opacity-100 focus:border-transparent focus:ring-0`}
+          value={postContent}
+          onChange={(e) => setPostContent(e.target.value)}
+        />
       </div>
       <input onChange={(event) => selectImage(event)} type="file" />
       <div className="mx-5 flex justify-between">

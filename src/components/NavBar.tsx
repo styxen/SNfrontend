@@ -25,7 +25,9 @@ const NavBar = () => {
         <Link to="/">
           <Button variant="ghost">home</Button>
         </Link>
-        <Button variant="ghost">news</Button>
+        <Link to="/news">
+          <Button variant="ghost">news</Button>
+        </Link>
         <Button variant="ghost">chats</Button>
       </div>
       <div className="flex items-center gap-2">

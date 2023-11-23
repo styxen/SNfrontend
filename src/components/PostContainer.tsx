@@ -8,12 +8,15 @@ import Button from './ui/Button';
 import NewPost from './NewPost';
 
 export type PostData = {
-  postId: string;
   userId: string;
+  postId: string;
   postContent: string;
   imageId: string | null;
   postEdited: boolean;
+  updatedAt: Date;
   createdAt: Date;
+  profileName: string;
+  profileImageId: string | null;
   countLikes: number;
   countComments: number;
   isLiked: boolean;
@@ -52,9 +55,9 @@ const PostContainer = ({ profile, avatarImageSrc, isCurrentUser }: PostCotainerP
   };
 
   return (
-    <div className="ph-3 grid h-fit gap-10 px-20 font-sans leading-tight">
+    <div className="grid h-fit gap-10 px-20 py-3 font-sans leading-tight">
       {isCurrentUser ? (
-        <Button onClick={() => setCreateNewPost(true)} className="w-40">
+        <Button size="lg" onClick={() => setCreateNewPost(true)}>
           <PenSquare />
         </Button>
       ) : null}
@@ -67,9 +70,9 @@ const PostContainer = ({ profile, avatarImageSrc, isCurrentUser }: PostCotainerP
           setCreateNewPost={setCreateNewPost}
         />
       ) : null}
-      {newPost ? <PostCard key={newPost.postId} post={newPost} avatarImageSrc={avatarImageSrc} profileName={profileName} /> : null}
+      {newPost ? <PostCard key={newPost.postId} post={newPost} /> : null}
       {posts.map((post) => (
-        <PostCard key={post.postId} post={post} avatarImageSrc={avatarImageSrc} profileName={profileName} />
+        <PostCard key={post.postId} post={post} />
       ))}
     </div>
   );

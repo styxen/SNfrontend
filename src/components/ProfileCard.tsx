@@ -34,22 +34,14 @@ const ProfileCard = ({
   });
 
   const sendFollowMutation = useMutation({
-    mutationFn: (method: 'post' | 'delete') => sendFollowRequest(method),
+    mutationFn: (method: 'post' | 'delete') => FollowRequest(method),
   });
 
   const handleUpdate = () => {
     const formData = new FormData();
-    if (selectedImage !== undefined && selectedImage !== null) {
-      formData.append('file', selectedImage);
-    }
-
-    if (profileName !== currentProfile.profileName && profileName !== '') {
-      formData.append('profileName', profileName);
-    }
-
-    if (profileStatus !== currentProfile.profileStatus && profileStatus !== '') {
-      formData.append('profileStatus', profileStatus);
-    }
+    if (selectedImage !== undefined && selectedImage !== null) formData.append('file', selectedImage);
+    if (profileName !== currentProfile.profileName && profileName !== '') formData.append('profileName', profileName);
+    if (profileStatus !== currentProfile.profileStatus && profileStatus !== '') formData.append('profileStatus', profileStatus);
 
     updateProfileMutation.mutate(formData);
     setEditProfile(false);
@@ -84,7 +76,7 @@ const ProfileCard = ({
     }
   };
 
-  const sendFollowRequest = async (method: 'post' | 'delete') => {
+  const FollowRequest = async (method: 'post' | 'delete') => {
     await axiosRequest({
       method,
       url: `followers/${userId}`,
