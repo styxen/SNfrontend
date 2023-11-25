@@ -47,19 +47,15 @@ const PostForm = ({ editPost, postUpdates, setPostUpdates }: PostFormProps) => {
       ) : (
         <div className="overflow-auto break-words p-3 text-2xl">{postContent}</div>
       )}
-      {isPostImageSrcLoading ? (
+      {editPost ? (
+        <input onChange={(event) => selectImage(event)} type="file" />
+      ) : isPostImageSrcLoading ? (
         <div>Image is loading...</div>
       ) : isPostImageSrcSuccsess ? (
-        <>
-          {editPost ? (
-            <input onChange={(event) => selectImage(event)} type="file" />
-          ) : (
-            <div className="flex flex-grow">
-              <img onClick={handleImgClick} src={postImageSrc} alt="postimage" className="w-full rounded-lg" />
-              <input onChange={(event) => selectImage(event)} ref={inputImageRef} type="file" className="hidden" />
-            </div>
-          )}
-        </>
+        <div className="flex flex-grow">
+          <img onClick={handleImgClick} src={postImageSrc} alt="postimage" className="w-full rounded-lg" />
+          <input onChange={(event) => selectImage(event)} ref={inputImageRef} type="file" className="hidden" />
+        </div>
       ) : null}
     </>
   );

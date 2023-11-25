@@ -60,7 +60,7 @@ const PostCard = ({ post }: PostCardProps) => {
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
   } = useQuery({
-    queryKey: ['postAvatarImageSrc', postId, postUpdates],
+    queryKey: ['postAvatarImageSrc', postId],
     queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original' }),
   });
 
@@ -135,7 +135,7 @@ const PostCard = ({ post }: PostCardProps) => {
               <img className="h-10 w-10 cursor-pointer rounded-full border-4 border-white" src={avatarImageSrc} alt="avatar" />
             </Link>
           ) : null}
-          <Link className="flex-shrink-0" to={`/${userId}`} replace>
+          <Link className="hidden flex-shrink-0 md:flex" to={`/${userId}`} replace>
             <p className="cursor-pointer font-sans text-2xl font-bold">{profileName}</p>
           </Link>
         </div>

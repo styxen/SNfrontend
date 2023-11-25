@@ -36,8 +36,8 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
   const handleUpdate = () => {
     const formData = new FormData();
     if (profileUpdates.selectedImage) formData.append('file', profileUpdates.selectedImage);
-    formData.append('profileName', profileName);
-    formData.append('profileStatus', profileStatus);
+    formData.append('profileName', profileUpdates.profileName);
+    formData.append('profileStatus', profileUpdates.profileStatus);
 
     mutateProfileUpdate(formData);
     setEditProfile(false);
@@ -46,7 +46,6 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
   const updateProfile = async (formData: FormData) => {
     const response = await axiosRequest<Profile>({
       method: 'patch',
-      baseURL: process.env.REACT_APP_BASE_URL,
       url: '/profiles/update',
       data: formData,
       headers: {

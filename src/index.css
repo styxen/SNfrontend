@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @media (max-width: 1000px) {
-  .w-80 {
+  .w-96 {
     display: none;
   }
 }

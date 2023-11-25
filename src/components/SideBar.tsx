@@ -47,7 +47,7 @@ const SideBar = () => {
   };
 
   return (
-    <aside className="h-[92vh] w-96 flex-none px-3 py-6 font-sans ">
+    <aside className="h-[92vh] w-96 flex-none px-3 py-6 font-sans">
       <div className="mx-auto h-full w-full overflow-hidden overflow-y-scroll rounded-2xl bg-white shadow-lg">
         {!selectedProfile || selectedUser === currentUserId ? null : (
           <div className="mx-4 mt-5">
