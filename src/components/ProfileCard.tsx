@@ -3,47 +3,43 @@ import { Profile, useGlobalContext } from '../context/GlobalContext';
 import Button from './ui/Button';
 import ProfileForm from './ProfileForm';
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query';
 import { axiosRequest } from '../api/axios';
 
 type ProfileCardProps = {
   isCurrentUser: boolean;
   profile: Profile;
-  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
-  avatarImageSrc: string;
-  editProfile: boolean;
-  setEditProfile: React.Dispatch<React.SetStateAction<boolean>>;
-  handlePinProfile: (profile: Profile) => void;
+  refetchProfile: (options?: RefetchOptions | undefined) => Promise<QueryObserverResult<Profile, Error>>;
 };
 
-const ProfileCard = ({
-  isCurrentUser,
-  profile,
-  setProfile,
-  avatarImageSrc,
-  editProfile,
-  setEditProfile,
-  handlePinProfile,
-}: ProfileCardProps) => {
-  const { isFollowed, userId, profileName, profileStatus } = profile;
-  const { currentProfile, setCurrentProfile, token } = useGlobalContext();
-  const [selectedImage, setSelectedImage] = useState<File | undefined>(undefined);
+export type ProfileUpdatesData = {
+  profileName: string;
+  profileStatus: string;
+  selectedImage: File | undefined;
+};
 
-  const updateProfileMutation = useMutation({
+const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProps) => {
+  const { isFollowed, userId, profileName, profileStatus, imageId } = profile;
+  const [editProfile, setEditProfile] = useState(false);
+  const { token, refetchCurrentProfile } = useGlobalContext();
+  const [profileUpdates, setProfileUpdates] = useState<ProfileUpdatesData>({ profileName, profileStatus, selectedImage: undefined });
+
+  const { mutate: mutateProfileUpdate } = useMutation({
     mutationFn: (formData: FormData) => updateProfile(formData),
+    onSuccess: () => (refetchProfile(), refetchCurrentProfile()),
   });
 
-  const sendFollowMutation = useMutation({
+  const { mutate: mutateFollow } = useMutation({
     mutationFn: (method: 'post' | 'delete') => FollowRequest(method),
   });
 
   const handleUpdate = () => {
     const formData = new FormData();
-    if (selectedImage !== undefined && selectedImage !== null) formData.append('file', selectedImage);
-    if (profileName !== currentProfile.profileName && profileName !== '') formData.append('profileName', profileName);
-    if (profileStatus !== currentProfile.profileStatus && profileStatus !== '') formData.append('profileStatus', profileStatus);
+    if (profileUpdates.selectedImage) formData.append('file', profileUpdates.selectedImage);
+    formData.append('profileName', profileName);
+    formData.append('profileStatus', profileStatus);
 
-    updateProfileMutation.mutate(formData);
+    mutateProfileUpdate(formData);
     setEditProfile(false);
   };
 
@@ -59,21 +55,11 @@ const ProfileCard = ({
       },
     });
 
-    setCurrentProfile(response);
-    setProfile(response);
     return response;
   };
 
   const handleFollow = () => {
-    if (isFollowed) {
-      sendFollowMutation.mutate('delete');
-      setProfile((prev) => ({ ...prev, isFollowed: false }));
-      handlePinProfile(currentProfile);
-    } else {
-      sendFollowMutation.mutate('post');
-      setProfile((prev) => ({ ...prev, isFollowed: true }));
-      handlePinProfile(profile);
-    }
+    isFollowed ? mutateFollow('delete') : mutateFollow('post');
   };
 
   const FollowRequest = async (method: 'post' | 'delete') => {
@@ -99,10 +85,9 @@ const ProfileCard = ({
           <div className="flex items-center justify-between text-center sm:flex sm:text-left">
             <ProfileForm
               editProfile={editProfile}
-              profile={profile}
-              setProfile={setProfile}
-              avatarImageSrc={avatarImageSrc}
-              setSelectedImage={setSelectedImage}
+              imageId={imageId}
+              profileUpdates={profileUpdates}
+              setProfileUpdates={setProfileUpdates}
             />
             <div className="flex h-fit flex-col md:flex-row">
               {!isCurrentUser ? (

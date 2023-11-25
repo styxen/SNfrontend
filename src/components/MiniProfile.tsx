@@ -9,19 +9,21 @@ type MiniProfileProps = {
   profile: Profile;
   handlePinProfile: (profile: Profile) => void;
   selectedUser: string;
-  currentUserId: string;
 };
 
-const MiniProfile = ({ profile, handlePinProfile, selectedUser, currentUserId }: MiniProfileProps) => {
+const MiniProfile = ({ profile, handlePinProfile, selectedUser }: MiniProfileProps) => {
+  const { fetchImage, currentUserId } = useGlobalContext();
   const { profileId, profileName, userId, imageId, isFollowed } = profile;
-  const [imageUrl, setImageSrc] = useState('');
   const [isHovered, setIsHoverd] = useState(false);
-  const { fetchImage } = useGlobalContext();
 
-  useQuery({
-    queryKey: ['currentImageSrc', { profileId }],
-    queryFn: () => fetchImage({ imageId, imageParams: 'compressed', setImageSrc }),
-    enabled: !!profile,
+  const {
+    data: avatarImageSrc,
+    isLoading: isAvatarImageSrcLoading,
+    isSuccess: isAvatarImageSrcSuccsess,
+  } = useQuery({
+    queryKey: ['currentImageSrc', { imageId }],
+    queryFn: () => fetchImage({ imageId, imageParams: 'compressed' }),
+    enabled: !!imageId,
   });
 
   return (
@@ -31,9 +33,13 @@ const MiniProfile = ({ profile, handlePinProfile, selectedUser, currentUserId }:
       key={profileId}
       className="relative flex w-full items-center gap-2 rounded-full bg-gray-100 p-1"
     >
-      <Link to={`/${userId}`} replace>
-        <img className="h-16 w-16 cursor-pointer rounded-full border-4 border-white" src={imageUrl} alt="avatar" />
-      </Link>
+      {isAvatarImageSrcLoading ? (
+        <div>Image is loading...</div>
+      ) : isAvatarImageSrcSuccsess ? (
+        <Link to={`/${userId}`} replace>
+          <img className="h-16 w-16 cursor-pointer rounded-full border-4 border-white" src={avatarImageSrc} alt="avatar" />
+        </Link>
+      ) : null}
       <div className="flex flex-col gap-0">
         <Link to={`/${userId}`} replace>
           <h3 className="cursor-pointer text-left font-serif text-2xl">{profileName}</h3>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Profile, useGlobalContext } from '../context/GlobalContext';
+import { useGlobalContext } from '../context/GlobalContext';
 import { axiosRequest } from '../api/axios';
 import { useQuery } from '@tanstack/react-query';
 import { PenSquare } from 'lucide-react';
@@ -23,19 +23,20 @@ export type PostData = {
 };
 
 type PostCotainerProps = {
-  profile: Profile;
-  avatarImageSrc: string;
+  userId: string;
   isCurrentUser: boolean;
 };
 
-const PostContainer = ({ profile, avatarImageSrc, isCurrentUser }: PostCotainerProps) => {
-  const { userId, profileName } = profile;
+const PostContainer = ({ userId, isCurrentUser }: PostCotainerProps) => {
   const { token } = useGlobalContext();
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [newPost, setNewPost] = useState<PostData | null>(null);
   const [createNewPost, setCreateNewPost] = useState(false);
 
-  useQuery({
+  const {
+    data: posts,
+    isLoading: isPostsLoading,
+    isSuccess: isPostsSuccess,
+    refetch: refetchPosts,
+  } = useQuery({
     queryKey: ['userPosts', { userId }],
     queryFn: () => fetchPosts(),
     enabled: !!userId,
@@ -50,7 +51,6 @@ const PostContainer = ({ profile, avatarImageSrc, isCurrentUser }: PostCotainerP
       },
     });
 
-    setPosts(response);
     return response;
   };
 
@@ -61,19 +61,12 @@ const PostContainer = ({ profile, avatarImageSrc, isCurrentUser }: PostCotainerP
           <PenSquare />
         </Button>
       ) : null}
-      {createNewPost ? (
-        <NewPost
-          userId={userId}
-          profileName={profileName}
-          avatarImageSrc={avatarImageSrc}
-          setNewPost={setNewPost}
-          setCreateNewPost={setCreateNewPost}
-        />
+      {createNewPost ? <NewPost userId={userId} setCreateNewPost={setCreateNewPost} refetchPosts={refetchPosts} /> : null}
+      {isPostsLoading ? (
+        <div>Posts are loading...</div>
+      ) : isPostsSuccess ? (
+        posts.map((post) => <PostCard key={post.postId} post={post} />)
       ) : null}
-      {newPost ? <PostCard key={newPost.postId} post={newPost} /> : null}
-      {posts.map((post) => (
-        <PostCard key={post.postId} post={post} />
-      ))}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { Heart, HeartCrack, MessageCircle, Pencil, Save, XCircle } from 'lucide-react';
 import { useGlobalContext } from '../context/GlobalContext';
-import { PostData } from './PostContainer';
+import { PostData } from './PostsContainer';
 import { useState } from 'react';
 import formatTimesAgo from '../utils/formatTimesAgo';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { axiosRequest } from '../api/axios';
 import PostForm from './PostForm';
 import { Link } from 'react-router-dom';
 import Button from './ui/Button';
+import ComentsContainer from './CommentsContainer';
 
 type PostCardProps = {
   post: PostData;
@@ -22,6 +23,8 @@ export type PostUpdates = {
   postEdited: boolean;
   postContent: string;
   imageId: string | null;
+  countComments: number;
+  selectedImage: File | undefined;
 };
 
 const PostCard = ({ post }: PostCardProps) => {
@@ -40,23 +43,25 @@ const PostCard = ({ post }: PostCardProps) => {
     profileName,
   } = post;
   const { fetchImage, token, currentUserId } = useGlobalContext();
-  const [postUpdates, setPostUpdates] = useState<PostUpdates>({ postEdited, postContent, imageId });
+  const [postUpdates, setPostUpdates] = useState<PostUpdates>({
+    postEdited,
+    postContent,
+    imageId,
+    countComments,
+    selectedImage: undefined,
+  });
   const [likes, setLikes] = useState<LikeData>({ count: countLikes, isLiked });
-  const [postImageSrc, setPostImageSrc] = useState('');
-  const [avatarImageSrc, setAvatarImageSrc] = useState('');
-  const [selectedImage, setSelectedImage] = useState<File | undefined>(undefined);
   const [isHoverd, setIsHoverd] = useState(false);
   const [editPost, setEditPost] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
-  useQuery({
+  const {
+    data: avatarImageSrc,
+    isLoading: isAvatarImageSrcLoading,
+    isSuccess: isAvatarImageSrcSuccsess,
+  } = useQuery({
     queryKey: ['postAvatarImageSrc', postId, postUpdates],
-    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original', setImageSrc: setAvatarImageSrc }),
-  });
-
-  useQuery({
-    queryKey: ['postImageSrc', { postImageId: postUpdates.imageId }],
-    queryFn: () => fetchImage({ imageId: postUpdates.imageId, imageParams: 'compressed', setImageSrc: setPostImageSrc }),
-    enabled: !!postUpdates.imageId,
+    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original' }),
   });
 
   const sendLikeMutation = useMutation({
@@ -79,7 +84,7 @@ const PostCard = ({ post }: PostCardProps) => {
     await axiosRequest({
       method,
       baseURL: process.env.REACT_APP_BASE_URL,
-      url: `likes/${post.postId}`,
+      url: `likes/${postId}`,
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -88,18 +93,13 @@ const PostCard = ({ post }: PostCardProps) => {
     method === 'post'
       ? setLikes((prev) => ({ count: prev.count + 1, isLiked: true }))
       : setLikes((prev) => ({ count: prev.count - 1, isLiked: false }));
-    return {};
   };
 
   const handleUpdate = () => {
     const formData = new FormData();
-    if (selectedImage !== undefined && selectedImage !== null) formData.append('file', selectedImage);
-    if (postContent !== postUpdates.postContent && postUpdates.postContent !== '') formData.append('postContent', postUpdates.postContent);
+    if (postUpdates.selectedImage) formData.append('file', postUpdates.selectedImage);
+    formData.append('postContent', postUpdates.postContent);
     formData.append('postId', postId);
-
-    for (const value of formData.values()) {
-      console.log(value);
-    }
 
     updatePostMutation.mutate(formData);
     setEditPost(false);
@@ -116,13 +116,8 @@ const PostCard = ({ post }: PostCardProps) => {
       },
     });
 
-    setPostUpdates({ postEdited: true, imageId: response.imageId, postContent: response.postContent });
+    setPostUpdates((prev) => ({ ...prev, postEdited: true, imageId: response.imageId, postContent: response.postContent }));
     return response;
-  };
-
-  const selectImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    setSelectedImage(file);
   };
 
   return (
@@ -133,11 +128,15 @@ const PostCard = ({ post }: PostCardProps) => {
     >
       <div className="flex justify-between">
         <div className="flex items-stretch gap-2">
-          <Link to={`/${userId}`} replace>
-            <img className="h-10 w-10 cursor-pointer rounded-full border-4 border-white" src={avatarImageSrc} alt="avatar" />
-          </Link>
-          <Link to={`/${userId}`} replace>
-            <span className="cursor-pointer font-sans text-2xl font-bold">{profileName}</span>
+          {isAvatarImageSrcLoading ? (
+            <div>Image is loading...</div>
+          ) : isAvatarImageSrcSuccsess ? (
+            <Link className="flex-shrink-0" to={`/${userId}`} replace>
+              <img className="h-10 w-10 cursor-pointer rounded-full border-4 border-white" src={avatarImageSrc} alt="avatar" />
+            </Link>
+          ) : null}
+          <Link className="flex-shrink-0" to={`/${userId}`} replace>
+            <p className="cursor-pointer font-sans text-2xl font-bold">{profileName}</p>
           </Link>
         </div>
         <div className="flex gap-2 px-3">
@@ -158,12 +157,7 @@ const PostCard = ({ post }: PostCardProps) => {
           ) : (
             <>
               {isHoverd && userId === currentUserId ? (
-                <Button
-                  onClick={() => setEditPost((prev) => !prev)}
-                  variant="ghost"
-                  size="sm"
-                  className="items-stretch rounded-full px-1.5 py-1"
-                >
+                <Button onClick={() => setEditPost((prev) => !prev)} variant="ghost" size="sm" className="rounded-full px-1.5 py-1">
                   <Pencil />
                 </Button>
               ) : null}
@@ -177,23 +171,18 @@ const PostCard = ({ post }: PostCardProps) => {
           </div>
         </div>
       </div>
-      <PostForm
-        editPost={editPost}
-        postUpdates={postUpdates}
-        setPostUpdates={setPostUpdates}
-        postImageSrc={postImageSrc}
-        selectImage={selectImage}
-      />
+      <PostForm editPost={editPost} postUpdates={postUpdates} setPostUpdates={setPostUpdates} />
       <div className="mx-5 flex justify-between">
         <div onClick={handleLike} className="flex cursor-pointer gap-2">
           {likes.isLiked ? <HeartCrack /> : <Heart />}
           {likes.count}
         </div>
-        <div className="flex cursor-pointer gap-2">
+        <div onClick={() => setShowComments((prev) => !prev)} className="flex cursor-pointer gap-2">
           <MessageCircle />
-          {countComments}
+          {postUpdates.countComments}
         </div>
       </div>
+      {showComments ? <ComentsContainer postId={postId} setPostUpdates={setPostUpdates} /> : null}
     </div>
   );
 };

@@ -4,20 +4,19 @@ import { axiosRequest } from '../api/axios';
 import MiniProfile from './MiniProfile';
 import { useQuery } from '@tanstack/react-query';
 
-type SideBarParams = {
-  handlePinProfile: (profile: Profile) => void;
-  selectedUser: string;
-  selectedProfile: Profile | null;
-};
-
-const SideBar = ({ handlePinProfile, selectedProfile, selectedUser }: SideBarParams) => {
+const SideBar = () => {
   const { token, currentUserId } = useGlobalContext();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchString, setSearchString] = useState('');
   const [searchParams, setSearchParams] = useState<'all' | 'followed'>('followed');
+  const [selectedUser, setSelectedUser] = useState(currentUserId);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
-  useQuery({
-    queryKey: ['filteredProfiles', { searchString, selectedUser, searchParams, selectedProfile }],
+  const {
+    data: profiles,
+    isLoading: isProfilesLoading,
+    isSuccess: isProfilesSuccess,
+  } = useQuery({
+    queryKey: ['filteredProfiles', { searchString, selectedUser, searchParams }],
     queryFn: () => fetchAllProfiles(),
   });
 
@@ -34,21 +33,25 @@ const SideBar = ({ handlePinProfile, selectedProfile, selectedUser }: SideBarPar
       },
     });
 
-    setProfiles(response);
     return response;
   };
 
+  const handlePinProfile = (profile: Profile) => {
+    if (profile.userId === selectedUser) {
+      setSelectedUser(currentUserId);
+      setSelectedProfile(null);
+      return;
+    }
+    setSelectedProfile(profile);
+    setSelectedUser(profile.userId);
+  };
+
   return (
-    <aside className="scrollbar-hidden h-[92vh] w-96 flex-none px-3 py-6 font-sans">
-      <div className="mx-auto h-full w-full overflow-hidden rounded-2xl bg-white shadow-lg">
+    <aside className="h-[92vh] w-96 flex-none px-3 py-6 font-sans ">
+      <div className="mx-auto h-full w-full overflow-hidden overflow-y-scroll rounded-2xl bg-white shadow-lg">
         {!selectedProfile || selectedUser === currentUserId ? null : (
           <div className="mx-4 mt-5">
-            <MiniProfile
-              profile={selectedProfile}
-              handlePinProfile={handlePinProfile}
-              selectedUser={selectedUser}
-              currentUserId={currentUserId}
-            />
+            <MiniProfile profile={selectedProfile} handlePinProfile={handlePinProfile} selectedUser={selectedUser} />
           </div>
         )}
         <input
@@ -88,19 +91,17 @@ const SideBar = ({ handlePinProfile, selectedProfile, selectedUser }: SideBarPar
           </div>
         </div>
         <div className="mx-4 grid grid-cols-1 gap-2">
-          {profiles
-            .filter((profile) => profile.userId !== selectedUser)
-            .map((profile, index) => {
-              return (
-                <MiniProfile
-                  key={index}
-                  profile={profile}
-                  handlePinProfile={handlePinProfile}
-                  selectedUser={selectedUser}
-                  currentUserId={currentUserId}
-                />
-              );
-            })}
+          {isProfilesLoading ? (
+            <div>Profiles are loading...</div>
+          ) : isProfilesSuccess ? (
+            <>
+              {profiles
+                .filter((profile) => profile.userId !== selectedUser)
+                .map((profile, index) => {
+                  return <MiniProfile key={index} profile={profile} handlePinProfile={handlePinProfile} selectedUser={selectedUser} />;
+                })}
+            </>
+          ) : null}
         </div>
       </div>
     </aside>

@@ -2,21 +2,23 @@ import { Link } from 'react-router-dom';
 import Button from './ui/Button';
 import { useGlobalContext } from '../context/GlobalContext';
 import { Bell } from 'lucide-react';
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 const NavBar = () => {
   const { currentProfile, fetchImage } = useGlobalContext();
-  const [avatarImageSrc, setAvatarImageSrc] = useState('');
 
-  useQuery({
+  const {
+    data: avatarImageSrc,
+    isLoading: isAvatarImageSrcLoading,
+    isSuccess: isAvatarImageSrcSuccsess,
+  } = useQuery({
     queryKey: ['navbarAvatarImageSrc', { currentProfile }],
-    queryFn: () => fetchImage({ imageId: currentProfile.imageId, imageParams: 'original', setImageSrc: setAvatarImageSrc }),
+    queryFn: () => fetchImage({ imageId: currentProfile!.imageId, imageParams: 'original' }),
     enabled: !!currentProfile,
   });
 
   const logOut = () => {
-    ['token', 'userId', 'profile', 'avatarImageSrc'].map((item) => localStorage.removeItem(item));
+    ['token', 'userId', 'profile'].map((item) => localStorage.removeItem(item));
   };
 
   return (
@@ -34,9 +36,12 @@ const NavBar = () => {
         <Button variant="ghost" className="rounded-full px-2 py-1">
           <Bell />
         </Button>
-        <div className="h-8 w-8">
-          <img className="h-full w-full cursor-pointer rounded-full" src={avatarImageSrc} alt="myAvatar" />
-        </div>
+        {isAvatarImageSrcLoading ? <div>Image is loading...</div> : null}
+        {isAvatarImageSrcSuccsess ? (
+          <div className="h-8 w-8">
+            <img className="h-full w-full cursor-pointer rounded-full" src={avatarImageSrc} alt="myAvatar" />
+          </div>
+        ) : null}
         <Link to="/auth/login">
           <Button onClick={logOut} variant="ghost">
             log out

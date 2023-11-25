@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useGlobalContext } from '../context/GlobalContext';
 import { useState } from 'react';
-import { PostData } from './PostContainer';
+import { PostData } from './PostsContainer';
 import { axiosRequest } from '../api/axios';
 import PostCard from './PostCard';
 

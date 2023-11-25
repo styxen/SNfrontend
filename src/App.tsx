@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import MainPage from './pages/MainPage';
 import UserPage from './pages/UserPage';
 import NewsPage from './pages/NewsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         </Route>
         <Route path="/news" element={<NewsPage />} />
         <Route path="/:userId" element={<UserPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </GlobalContextProvider>
   );

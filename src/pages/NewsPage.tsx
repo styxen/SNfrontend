@@ -5,14 +5,14 @@ import SideBar from '../components/SideBar';
 import { Profile, useGlobalContext } from '../context/GlobalContext';
 
 const NewsPage = () => {
-  const { currentUserId, currentProfile } = useGlobalContext();
+  const { currentUserId } = useGlobalContext();
   const [selectedUser, setSelectedUser] = useState(currentUserId);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
   const handlePinProfile = (profile: Profile) => {
     if (profile.userId === selectedUser) {
       setSelectedUser(currentUserId);
-      setSelectedProfile(currentProfile);
+      setSelectedProfile(null);
       return;
     }
     !profile.isFollowed ? setSelectedProfile({ ...profile, isFollowed: true }) : setSelectedProfile(profile);

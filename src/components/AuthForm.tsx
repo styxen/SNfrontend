@@ -24,14 +24,14 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
   const [authData, setAuthData] = useState<AuthData>({ userEmail: '', userPassword: '' });
   const navigate = useNavigate();
 
-  const authMutation = useMutation({
+  const { mutate: mutateAuth } = useMutation({
     mutationFn: () => authRequest(),
   });
 
   const handleAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    authMutation.mutate();
+    mutateAuth();
     navigate(`/`);
   };
 
