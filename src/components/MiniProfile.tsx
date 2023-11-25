@@ -21,7 +21,7 @@ const MiniProfile = ({ profile, handlePinProfile, selectedUser }: MiniProfilePro
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
   } = useQuery({
-    queryKey: ['currentImageSrc', { imageId }],
+    queryKey: ['miniProfileImageSrc', { imageId }],
     queryFn: () => fetchImage({ imageId, imageParams: 'compressed' }),
     enabled: !!imageId,
   });

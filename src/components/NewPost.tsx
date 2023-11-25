@@ -24,7 +24,7 @@ const NewPost = ({ userId, setCreateNewPost, refetchPosts }: NewPostProps) => {
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
   } = useQuery({
-    queryKey: ['imageSrc', imageId],
+    queryKey: ['newPostAvatarImageSrc', imageId],
     queryFn: () => fetchImage({ imageId, imageParams: 'original' }),
     enabled: !!imageId,
   });

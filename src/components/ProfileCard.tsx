@@ -19,10 +19,10 @@ export type ProfileUpdatesData = {
 };
 
 const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProps) => {
-  const { isFollowed, userId, profileName, profileStatus, imageId } = profile;
-  const [editProfile, setEditProfile] = useState(false);
   const { token, refetchCurrentProfile } = useGlobalContext();
+  const { isFollowed, userId, profileName, profileStatus, imageId } = profile;
   const [profileUpdates, setProfileUpdates] = useState<ProfileUpdatesData>({ profileName, profileStatus, selectedImage: undefined });
+  const [editProfile, setEditProfile] = useState(false);
 
   const { mutate: mutateProfileUpdate } = useMutation({
     mutationFn: (formData: FormData) => updateProfile(formData),
