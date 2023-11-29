@@ -90,7 +90,7 @@ const SideBar = () => {
             </label>
           </div>
         </div>
-        <div className="mx-4 grid grid-cols-1 gap-2">
+        <div className="mx-4 flex flex-col gap-2">
           {isProfilesLoading ? (
             <div>Profiles are loading...</div>
           ) : isProfilesSuccess ? (

@@ -5,6 +5,7 @@ import ProfileForm from './ProfileForm';
 import { useState } from 'react';
 import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query';
 import { axiosRequest } from '../api/axios';
+import { useNavigate } from 'react-router-dom';
 
 type ProfileCardProps = {
   isCurrentUser: boolean;
@@ -18,11 +19,18 @@ export type ProfileUpdatesData = {
   selectedImage: File | undefined;
 };
 
+type ChatRoomData = {
+  chatRoomId: string;
+  firstUserId: string;
+  secondUserId: string;
+};
+
 const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProps) => {
   const { token, refetchCurrentProfile } = useGlobalContext();
   const { isFollowed, userId, profileName, profileStatus, imageId } = profile;
   const [profileUpdates, setProfileUpdates] = useState<ProfileUpdatesData>({ profileName, profileStatus, selectedImage: undefined });
   const [editProfile, setEditProfile] = useState(false);
+  const navigate = useNavigate();
 
   const { mutate: mutateProfileUpdate } = useMutation({
     mutationFn: (formData: FormData) => updateProfile(formData),
@@ -30,7 +38,12 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
   });
 
   const { mutate: mutateFollow } = useMutation({
-    mutationFn: (method: 'post' | 'delete') => FollowRequest(method),
+    mutationFn: (method: 'post' | 'delete') => followRequest(method),
+  });
+
+  const { mutate: mutateCreateChatRoom } = useMutation({
+    mutationFn: () => createChatRoom(),
+    onSuccess: (data) => navigate(`/chats/${data.chatRoomId}`),
   });
 
   const handleUpdate = () => {
@@ -61,7 +74,7 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
     isFollowed ? mutateFollow('delete') : mutateFollow('post');
   };
 
-  const FollowRequest = async (method: 'post' | 'delete') => {
+  const followRequest = async (method: 'post' | 'delete') => {
     await axiosRequest({
       method,
       url: `followers/${userId}`,
@@ -69,6 +82,22 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
         Authorization: `Bearer ${token}`,
       },
     });
+  };
+
+  const sendMessage = () => {
+    mutateCreateChatRoom();
+  };
+
+  const createChatRoom = async () => {
+    const response = await axiosRequest<ChatRoomData>({
+      method: 'get',
+      url: `chatRooms/${userId}`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
   };
 
   return (
@@ -94,7 +123,7 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
                   <Button onClick={handleFollow} variant={isFollowed ? 'ghost' : 'default'} className="w-24 rounded-full md:w-40">
                     {isFollowed ? 'Unfollow' : 'Follow'}
                   </Button>
-                  <Button variant="ghost" className="w-40 rounded-full">
+                  <Button onClick={sendMessage} variant="ghost" className="w-40 rounded-full">
                     <MessageSquare />
                   </Button>
                 </>

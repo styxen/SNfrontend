@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from './ui/Button';
 import { axiosRequest } from '../api/axios';
 import { useMutation } from '@tanstack/react-query';
+import { Socket } from 'socket.io-client';
 
 type AuthFormProps = {
   authAction: 'login' | 'register';
@@ -26,13 +27,17 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
 
   const { mutate: mutateAuth } = useMutation({
     mutationFn: () => authRequest(),
+    onSuccess: (data) => {
+      setCurrentUserId(data.userId);
+      setToken(data.token);
+      navigate(`/`);
+    },
   });
 
   const handleAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     mutateAuth();
-    navigate(`/`);
   };
 
   const authRequest = async () => {
@@ -42,8 +47,6 @@ const AuthForm = ({ authAction }: AuthFormProps) => {
       data: authData,
     });
 
-    setCurrentUserId(response.userId);
-    setToken(response.token);
     return response;
   };
 

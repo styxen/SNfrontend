@@ -27,8 +27,8 @@ const ComentsContainer = ({ postId, setPostUpdates }: CommentsContainerProps) =>
 
   const {
     data: comments,
-    isLoading: isCommentsLoading,
-    isSuccess: isCommentsSuccess,
+    isLoading: areCommentsLoading,
+    isSuccess: areCommentsSuccess,
     refetch: refetchComments,
   } = useQuery({
     queryKey: ['userComments', { postId }],
@@ -51,9 +51,9 @@ const ComentsContainer = ({ postId, setPostUpdates }: CommentsContainerProps) =>
   return (
     <div className="mx-10 flex max-h-96 w-full flex-col gap-2 overflow-hidden overflow-y-scroll">
       <NewComment postId={postId} setPostUpdates={setPostUpdates} refetchComments={refetchComments} />
-      {isCommentsLoading ? (
+      {areCommentsLoading ? (
         <div>Comments are loading...</div>
-      ) : isCommentsSuccess ? (
+      ) : areCommentsSuccess ? (
         <>
           {comments.map((comment) => (
             <CommentCard key={comment.commentId} comment={comment} />

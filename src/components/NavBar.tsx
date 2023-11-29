@@ -30,7 +30,9 @@ const NavBar = () => {
         <Link to="/news">
           <Button variant="ghost">news</Button>
         </Link>
-        <Button variant="ghost">chats</Button>
+        <Link to="/chats/">
+          <Button variant="ghost">chats</Button>
+        </Link>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" className="rounded-full px-2 py-1">
