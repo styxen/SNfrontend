@@ -24,17 +24,11 @@ type GlobalContext = {
   currentUserId: string;
   setCurrentUserId: React.Dispatch<React.SetStateAction<string>>;
   fetchProfile: ({ userId }: FetchProfileProps) => Promise<Profile>;
-  fetchImage: ({ imageId, imageParams }: FetchImageProps) => Promise<string>;
   refetchCurrentProfile: (options?: RefetchOptions | undefined) => Promise<QueryObserverResult<Profile, Error>>;
 };
 
 type FetchProfileProps = {
   userId: string;
-};
-
-type FetchImageProps = {
-  imageId: string | null;
-  imageParams: 'original' | 'compressed';
 };
 
 const GlobalContext = createContext({} as GlobalContext);
@@ -66,21 +60,6 @@ export const GlobalContextProvider = ({ children }: GlobalContextProviderProps) 
     return response;
   };
 
-  const fetchImage = async ({ imageId, imageParams }: FetchImageProps): Promise<string> => {
-    const response = await axiosRequest<ArrayBuffer>({
-      method: 'get',
-      url: `/images/${imageParams}/${!imageId ? 'default' : imageId}`,
-      responseType: 'arraybuffer',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const imageBlob = new Blob([response]);
-    const imageUrl = URL.createObjectURL(imageBlob);
-    return imageUrl;
-  };
-
   return (
     <GlobalContext.Provider
       value={{
@@ -90,7 +69,6 @@ export const GlobalContextProvider = ({ children }: GlobalContextProviderProps) 
         currentUserId,
         setCurrentUserId,
         fetchProfile,
-        fetchImage,
         refetchCurrentProfile,
       }}
     >

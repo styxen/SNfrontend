@@ -1,9 +1,9 @@
-import { useGlobalContext } from '../context/GlobalContext';
+import { useGlobalContext } from '../../context/GlobalContext';
 import NewComment from './NewComment';
 import CommentCard from './CommentCard';
 import { useQuery } from '@tanstack/react-query';
-import { axiosRequest } from '../api/axios';
-import { PostUpdates } from './PostCard';
+import { axiosRequest } from '../../api/axios';
+import { PostUpdates } from '../Post/PostCard';
 
 type CommentsContainerProps = {
   postId: string;
@@ -31,7 +31,7 @@ const ComentsContainer = ({ postId, setPostUpdates }: CommentsContainerProps) =>
     isSuccess: areCommentsSuccess,
     refetch: refetchComments,
   } = useQuery({
-    queryKey: ['userComments', { postId }],
+    queryKey: ['userComments', postId],
     queryFn: () => fetchComments(),
     enabled: !!postId,
   });
@@ -56,7 +56,7 @@ const ComentsContainer = ({ postId, setPostUpdates }: CommentsContainerProps) =>
       ) : areCommentsSuccess ? (
         <>
           {comments.map((comment) => (
-            <CommentCard key={comment.commentId} comment={comment} />
+            <CommentCard key={comment.commentId} comment={comment} setPostUpdates={setPostUpdates} />
           ))}
         </>
       ) : null}

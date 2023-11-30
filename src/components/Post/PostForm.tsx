@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { PostUpdates } from './PostCard';
 import { useRef } from 'react';
-import { useGlobalContext } from '../context/GlobalContext';
+import { useGlobalContext } from '../../context/GlobalContext';
+import useImage from '../../hooks/useImage';
 
 type PostFormProps = {
   editPost: boolean;
@@ -10,7 +10,7 @@ type PostFormProps = {
 };
 
 const PostForm = ({ editPost, postUpdates, setPostUpdates }: PostFormProps) => {
-  const { fetchImage } = useGlobalContext();
+  const { token } = useGlobalContext();
   const { postContent, imageId } = postUpdates;
   const inputImageRef = useRef<HTMLInputElement>(null);
 
@@ -18,11 +18,7 @@ const PostForm = ({ editPost, postUpdates, setPostUpdates }: PostFormProps) => {
     data: postImageSrc,
     isLoading: isPostImageSrcLoading,
     isSuccess: isPostImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['postImageSrc', { imageId }],
-    queryFn: () => fetchImage({ imageId, imageParams: 'compressed' }),
-    enabled: !!imageId,
-  });
+  } = useImage({ imageId, imageParams: 'compressed', token });
 
   const handleImgClick = () => {
     if (!inputImageRef.current || !editPost) return;

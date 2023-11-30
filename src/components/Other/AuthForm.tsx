@@ -1,10 +1,9 @@
 import { FormEvent, useState } from 'react';
-import { useGlobalContext } from '../context/GlobalContext';
+import { useGlobalContext } from '../../context/GlobalContext';
 import { useNavigate } from 'react-router-dom';
-import Button from './ui/Button';
-import { axiosRequest } from '../api/axios';
+import Button from '../ui/Button';
+import { axiosRequest } from '../../api/axios';
 import { useMutation } from '@tanstack/react-query';
-import { Socket } from 'socket.io-client';
 
 type AuthFormProps = {
   authAction: 'login' | 'register';

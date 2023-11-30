@@ -1,7 +1,7 @@
 import { useRef } from 'react';
-import { useGlobalContext } from '../context/GlobalContext';
-import { useQuery } from '@tanstack/react-query';
+import { useGlobalContext } from '../../context/GlobalContext';
 import { ProfileUpdatesData } from './ProfileCard';
+import useImage from '../../hooks/useImage';
 
 type ProfileFormProps = {
   editProfile: boolean;
@@ -11,7 +11,7 @@ type ProfileFormProps = {
 };
 
 const ProfileForm = ({ editProfile, imageId, profileUpdates, setProfileUpdates }: ProfileFormProps) => {
-  const { fetchImage } = useGlobalContext();
+  const { token } = useGlobalContext();
   const inputImageRef = useRef<HTMLInputElement>(null);
   const { profileName, profileStatus } = profileUpdates;
 
@@ -19,11 +19,7 @@ const ProfileForm = ({ editProfile, imageId, profileUpdates, setProfileUpdates }
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['profileImageSrc', imageId],
-    queryFn: () => fetchImage({ imageId, imageParams: 'original' }),
-    enabled: !!imageId,
-  });
+  } = useImage({ imageId, imageParams: 'original', token });
 
   const handleImgClick = () => {
     if (!inputImageRef.current) return;

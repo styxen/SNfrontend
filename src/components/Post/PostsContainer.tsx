@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useGlobalContext } from '../context/GlobalContext';
-import { axiosRequest } from '../api/axios';
+import { useGlobalContext } from '../../context/GlobalContext';
+import { axiosRequest } from '../../api/axios';
 import { useQuery } from '@tanstack/react-query';
 import { PenSquare } from 'lucide-react';
 import PostCard from './PostCard';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import NewPost from './NewPost';
 
 export type PostData = {
@@ -35,9 +35,8 @@ const PostContainer = ({ userId, isCurrentUser }: PostCotainerProps) => {
     data: posts,
     isLoading: isPostsLoading,
     isSuccess: isPostsSuccess,
-    refetch: refetchPosts,
   } = useQuery({
-    queryKey: ['userPosts', { userId }],
+    queryKey: ['userPosts', userId],
     queryFn: () => fetchPosts(),
     enabled: !!userId,
   });
@@ -61,7 +60,7 @@ const PostContainer = ({ userId, isCurrentUser }: PostCotainerProps) => {
           <PenSquare />
         </Button>
       ) : null}
-      {createNewPost ? <NewPost userId={userId} setCreateNewPost={setCreateNewPost} refetchPosts={refetchPosts} /> : null}
+      {createNewPost ? <NewPost userId={userId} setCreateNewPost={setCreateNewPost} /> : null}
       {isPostsLoading ? (
         <div>Posts are loading...</div>
       ) : isPostsSuccess ? (

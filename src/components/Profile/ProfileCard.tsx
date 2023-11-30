@@ -1,11 +1,12 @@
-import { UserCog2, MessageSquare, Save, XCircle } from 'lucide-react';
-import { Profile, useGlobalContext } from '../context/GlobalContext';
-import Button from './ui/Button';
+import { UserCog2, MessageSquare, Save, XCircle, Trash2 } from 'lucide-react';
+import { Profile, useGlobalContext } from '../../context/GlobalContext';
+import Button from '../ui/Button';
 import ProfileForm from './ProfileForm';
 import { useState } from 'react';
-import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query';
-import { axiosRequest } from '../api/axios';
+import { QueryObserverResult, RefetchOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { axiosRequest } from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
+import DeleteModal from '../Other/DeleteModal';
 
 type ProfileCardProps = {
   isCurrentUser: boolean;
@@ -30,7 +31,12 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
   const { isFollowed, userId, profileName, profileStatus, imageId } = profile;
   const [profileUpdates, setProfileUpdates] = useState<ProfileUpdatesData>({ profileName, profileStatus, selectedImage: undefined });
   const [editProfile, setEditProfile] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const { mutate: mutateProfileUpdate } = useMutation({
     mutationFn: (formData: FormData) => updateProfile(formData),
@@ -44,6 +50,15 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
   const { mutate: mutateCreateChatRoom } = useMutation({
     mutationFn: () => createChatRoom(),
     onSuccess: (data) => navigate(`/chats/${data.chatRoomId}`),
+  });
+
+  const { mutate: mutateDeleteProfile } = useMutation({
+    mutationFn: () => deleteProfile(),
+    onSuccess: () => {
+      queryClient.cancelQueries();
+      ['token', 'userId', 'profile'].map((item) => localStorage.removeItem(item));
+      navigate('/auth/login');
+    },
   });
 
   const handleUpdate = () => {
@@ -100,8 +115,25 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
     return response;
   };
 
+  const deleteProfile = async () => {
+    const response = await axiosRequest({
+      method: 'delete',
+      url: '/users/',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  };
+
+  const handleDelete = () => {
+    mutateDeleteProfile();
+  };
+
   return (
     <div className="h-fit px-3 py-6 font-sans leading-tight">
+      <DeleteModal isModalOpen={isModalOpen} onClose={closeModal} onConfirm={handleDelete} item="accaunt" />
       <div className="mx-auto w-full overflow-hidden rounded-2xl bg-white shadow-lg">
         <div
           className="h-40 bg-cover"
@@ -117,28 +149,31 @@ const ProfileCard = ({ isCurrentUser, profile, refetchProfile }: ProfileCardProp
               profileUpdates={profileUpdates}
               setProfileUpdates={setProfileUpdates}
             />
-            <div className="flex h-fit flex-col md:flex-row">
+            <div className="flex h-fit flex-col gap-3 md:flex-row">
               {!isCurrentUser ? (
                 <>
-                  <Button onClick={handleFollow} variant={isFollowed ? 'ghost' : 'default'} className="w-24 rounded-full md:w-40">
+                  <Button onClick={handleFollow} variant={isFollowed ? 'ghost' : 'default'} className="md:w-30 w-24 rounded-full">
                     {isFollowed ? 'Unfollow' : 'Follow'}
                   </Button>
-                  <Button onClick={sendMessage} variant="ghost" className="w-40 rounded-full">
+                  <Button onClick={sendMessage} variant="ghost" className="md:w-30 w-24 rounded-full">
                     <MessageSquare />
                   </Button>
                 </>
               ) : (
                 <>
                   {!editProfile ? (
-                    <Button variant="ghost" className="w-24 rounded-full md:w-40" onClick={() => setEditProfile((prev) => !prev)}>
+                    <Button variant="ghost" className="md:w-30 w-24 rounded-full" onClick={() => setEditProfile((prev) => !prev)}>
                       <UserCog2 />
                     </Button>
                   ) : (
                     <>
-                      <Button onClick={handleUpdate} className="w-24 rounded-full md:w-40">
+                      <Button onClick={openModal} className="md:w-30 w-24 items-center rounded-full bg-red-300 hover:bg-red-500">
+                        <Trash2 />
+                      </Button>
+                      <Button onClick={handleUpdate} className="md:w-30 w-24 rounded-full">
                         <Save />
                       </Button>
-                      <Button variant="ghost" className="w-24 rounded-full md:w-40" onClick={() => setEditProfile((prev) => !prev)}>
+                      <Button variant="ghost" className="md:w-30 w-24 rounded-full" onClick={() => setEditProfile((prev) => !prev)}>
                         <XCircle />
                       </Button>
                     </>

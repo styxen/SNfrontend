@@ -1,10 +1,17 @@
-import { useState } from 'react';
-import { Profile, useGlobalContext } from '../context/GlobalContext';
-import { axiosRequest } from '../api/axios';
-import MiniProfile from './MiniProfile';
+import { useEffect, useState } from 'react';
+import { Profile, useGlobalContext } from '../../context/GlobalContext';
+import { axiosRequest } from '../../api/axios';
+import MiniProfile from '../Profile/MiniProfile';
 import { useQuery } from '@tanstack/react-query';
+import Button from '../ui/Button';
+import { PanelRightClose } from 'lucide-react';
 
-const SideBar = () => {
+type SideBarProps = {
+  isSideBarOpen: boolean;
+  closeSidebar: () => void;
+};
+
+const SideBar = ({ isSideBarOpen, closeSidebar }: SideBarProps) => {
   const { token, currentUserId } = useGlobalContext();
   const [searchString, setSearchString] = useState('');
   const [searchParams, setSearchParams] = useState<'all' | 'followed'>('followed');
@@ -46,8 +53,35 @@ const SideBar = () => {
     setSelectedUser(profile.userId);
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1000 && isSideBarOpen) {
+        closeSidebar();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isSideBarOpen]);
+
   return (
-    <aside className="h-[92vh] w-96 flex-none px-3 py-6 font-sans">
+    <aside
+      className={`h-[92vh] flex-none overflow-hidden px-3 py-6 font-sans ${
+        isSideBarOpen ? 'flxe absolute right-5 z-10 w-[24rem]' : 'w-96'
+      }`}
+    >
+      <Button
+        onClick={closeSidebar}
+        variant="ghost"
+        size="sm"
+        className={`h-fit w-fit p-0 ${isSideBarOpen ? 'absolute left-3 top-6 flex rounded-lg' : 'hidden'}`}
+      >
+        <PanelRightClose />
+      </Button>
       <div className="mx-auto h-full w-full overflow-hidden overflow-y-scroll rounded-2xl bg-white shadow-lg">
         {!selectedProfile || selectedUser === currentUserId ? null : (
           <div className="mx-4 mt-5">

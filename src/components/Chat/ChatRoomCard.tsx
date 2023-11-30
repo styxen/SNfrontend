@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { useGlobalContext } from '../context/GlobalContext';
-import { ChatRoomData } from './ChatsSideBar';
+import { useGlobalContext } from '../../context/GlobalContext';
+import { ChatRoomData } from '../SideBar/ChatsSideBar';
 import { Link, useParams } from 'react-router-dom';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import { MessageSquare } from 'lucide-react';
+import useImage from '../../hooks/useImage';
 
 type ChatRoomCardProps = {
   chatRoom: ChatRoomData;
@@ -11,7 +11,7 @@ type ChatRoomCardProps = {
 
 const ChatRoomCard = ({ chatRoom }: ChatRoomCardProps) => {
   const { chatRoomId: currentChatRoomId } = useParams();
-  const { fetchImage, currentUserId } = useGlobalContext();
+  const { currentUserId, token } = useGlobalContext();
   const { chatRoomId, profileImageId, prfileName, firstUserId, secondUserId } = chatRoom;
   const otherUserId = firstUserId === currentUserId ? secondUserId : firstUserId;
 
@@ -19,11 +19,7 @@ const ChatRoomCard = ({ chatRoom }: ChatRoomCardProps) => {
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['chatRoomImageSrc', { profileImageId }],
-    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'compressed' }),
-    enabled: !!profileImageId,
-  });
+  } = useImage({ imageId: profileImageId, imageParams: 'compressed', token });
 
   return (
     <div

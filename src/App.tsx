@@ -8,16 +8,24 @@ import NewsPage from './pages/NewsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ChatsPage from './pages/ChatsPage';
 import { io } from 'socket.io-client';
-import { MessageData } from './components/ChatCard';
+import { MessageData } from './components/Chat/ChatCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 function App() {
-  const wsClient = io('http://localhost:3000');
+  const wsClient = io(process.env.REACT_APP_SOCKET_URL!);
   const queryClient = useQueryClient();
 
   wsClient.on('ReceiveMessageEvent', (data: MessageData) => {
     queryClient.setQueryData(['chatMessages', data.chatRoomId], (prev: MessageData[]) => {
       return [...prev, data];
+    });
+  });
+
+  wsClient.on('ReceiveUpdateMessageEvent', (data: MessageData) => {
+    queryClient.setQueryData(['chatMessages', data.chatRoomId], (prev: MessageData[]) => {
+      return prev.map((prevMessage) => {
+        return prevMessage.messageId === data.messageId ? data : prevMessage;
+      });
     });
   });
 

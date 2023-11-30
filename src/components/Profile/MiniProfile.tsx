@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Profile, useGlobalContext } from '../context/GlobalContext';
+import { Profile, useGlobalContext } from '../../context/GlobalContext';
 import { Link } from 'react-router-dom';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import { Pin, PinOff } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import useImage from '../../hooks/useImage';
 
 type MiniProfileProps = {
   profile: Profile;
@@ -12,7 +12,7 @@ type MiniProfileProps = {
 };
 
 const MiniProfile = ({ profile, handlePinProfile, selectedUser }: MiniProfileProps) => {
-  const { fetchImage, currentUserId } = useGlobalContext();
+  const { currentUserId, token } = useGlobalContext();
   const { profileId, profileName, userId, imageId, isFollowed } = profile;
   const [isHovered, setIsHoverd] = useState(false);
 
@@ -20,11 +20,7 @@ const MiniProfile = ({ profile, handlePinProfile, selectedUser }: MiniProfilePro
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['miniProfileImageSrc', { imageId }],
-    queryFn: () => fetchImage({ imageId, imageParams: 'compressed' }),
-    enabled: !!imageId,
-  });
+  } = useImage({ imageId, imageParams: 'compressed', token });
 
   return (
     <div

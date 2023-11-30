@@ -1,37 +1,34 @@
 import { Heart, MessageCircle, Save, XCircle } from 'lucide-react';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { QueryObserverResult, RefetchOptions, useMutation, useQuery } from '@tanstack/react-query';
-import { axiosRequest } from '../api/axios';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { axiosRequest } from '../../api/axios';
 import { PostData } from './PostsContainer';
-import { useGlobalContext } from '../context/GlobalContext';
+import { useGlobalContext } from '../../context/GlobalContext';
+import useImage from '../../hooks/useImage';
 
 type NewPostProps = {
   userId: string;
   setCreateNewPost: React.Dispatch<React.SetStateAction<boolean>>;
-  refetchPosts: (options?: RefetchOptions | undefined) => Promise<QueryObserverResult<PostData[], Error>>;
 };
 
-const NewPost = ({ userId, setCreateNewPost, refetchPosts }: NewPostProps) => {
-  const { token, currentProfile, fetchImage } = useGlobalContext();
+const NewPost = ({ userId, setCreateNewPost }: NewPostProps) => {
+  const { token, currentProfile } = useGlobalContext();
   const { profileName, imageId } = currentProfile!;
   const [postContent, setPostContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | undefined>(undefined);
+  const queryClient = useQueryClient();
 
   const {
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['newPostAvatarImageSrc', imageId],
-    queryFn: () => fetchImage({ imageId, imageParams: 'original' }),
-    enabled: !!imageId,
-  });
+  } = useImage({ imageId, imageParams: 'original', token });
 
   const { mutate: mutateCreatePost } = useMutation({
     mutationFn: (formData: FormData) => createPost(formData),
-    onSuccess: () => refetchPosts(),
+    onSuccess: (data) => queryClient.setQueryData(['userPosts', userId], (prev: PostData[]) => ({ ...prev, data })),
   });
 
   const handleCreate = () => {

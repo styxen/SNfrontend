@@ -1,12 +1,13 @@
 import { Save, XCircle } from 'lucide-react';
 import { CommentData } from './CommentsContainer';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { useGlobalContext } from '../context/GlobalContext';
-import { axiosRequest } from '../api/axios';
-import { QueryObserverResult, RefetchOptions, useMutation, useQuery } from '@tanstack/react-query';
-import { PostUpdates } from './PostCard';
+import { useGlobalContext } from '../../context/GlobalContext';
+import { axiosRequest } from '../../api/axios';
+import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query';
+import { PostUpdates } from '../Post/PostCard';
+import useImage from '../../hooks/useImage';
 
 type NewCommentProps = {
   postId: string;
@@ -20,7 +21,7 @@ type NewCommentData = {
 };
 
 const NewComment = ({ postId, setPostUpdates, refetchComments }: NewCommentProps) => {
-  const { currentUserId, currentProfile, token, fetchImage } = useGlobalContext();
+  const { currentUserId, currentProfile, token } = useGlobalContext();
   const { profileName, imageId } = currentProfile!;
   const [commentContent, setCommentContent] = useState('');
 
@@ -28,10 +29,7 @@ const NewComment = ({ postId, setPostUpdates, refetchComments }: NewCommentProps
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['commentAvatarImageSrc'],
-    queryFn: () => fetchImage({ imageId, imageParams: 'compressed' }),
-  });
+  } = useImage({ imageId, imageParams: 'compressed', token });
 
   const { mutate: mutateCreateComment } = useMutation({
     mutationFn: ({ postId, commentContent }: NewCommentData) => createComment({ postId, commentContent }),

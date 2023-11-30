@@ -1,14 +1,18 @@
 import { Link } from 'react-router-dom';
 import { CommentData } from './CommentsContainer';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useGlobalContext } from '../context/GlobalContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useGlobalContext } from '../../context/GlobalContext';
 import { useState } from 'react';
-import Button from './ui/Button';
-import { Pencil, Save, XCircle } from 'lucide-react';
-import { axiosRequest } from '../api/axios';
+import Button from '../ui/Button';
+import { Pencil, Save, Trash2, XCircle } from 'lucide-react';
+import { axiosRequest } from '../../api/axios';
+import useImage from '../../hooks/useImage';
+import DeleteModal from '../Other/DeleteModal';
+import { PostUpdates } from '../Post/PostCard';
 
 type CommentCardProps = {
   comment: CommentData;
+  setPostUpdates: React.Dispatch<React.SetStateAction<PostUpdates>>;
 };
 
 type CommentUpdatesData = {
@@ -16,25 +20,37 @@ type CommentUpdatesData = {
   commentContent: string;
 };
 
-const CommentCard = ({ comment }: CommentCardProps) => {
-  const { fetchImage, currentUserId, token } = useGlobalContext();
-  const { userId, profileName, profileImageId, commentId, commentContent } = comment;
+const CommentCard = ({ comment, setPostUpdates }: CommentCardProps) => {
+  const { currentUserId, token } = useGlobalContext();
+  const { userId, profileName, profileImageId, commentId, commentContent, postId } = comment;
   const [commentUpdates, setCommentUpdates] = useState(commentContent);
   const [isHoverd, setIsHoverd] = useState(false);
   const [editComment, setEditComment] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const isCurrentUser = currentUserId === comment.userId;
+  const queryClient = useQueryClient();
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const {
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['commentAvatarImageSrc', commentId],
-    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original' }),
-  });
+  } = useImage({ imageId: profileImageId, imageParams: 'original', token });
 
   const { mutate: mutateCreateComment } = useMutation({
     mutationFn: ({ commentId, commentContent }: CommentUpdatesData) => updateComment({ commentId, commentContent }),
+  });
+
+  const { mutate: mutateDeleteComment } = useMutation({
+    mutationFn: (commentId: string) => deleteComment(commentId),
+    onSuccess: () => {
+      setPostUpdates((prev) => ({ ...prev, countComments: prev.countComments - 1 }));
+      queryClient.setQueryData(['userComments', postId], (prev: CommentData[]) =>
+        prev.filter((prveComment) => prveComment.commentId !== commentId)
+      );
+    },
   });
 
   const handleUpdate = () => {
@@ -55,8 +71,28 @@ const CommentCard = ({ comment }: CommentCardProps) => {
     return response;
   };
 
+  const deleteComment = async (commentId: string) => {
+    const response = await axiosRequest({
+      method: 'delete',
+      url: `/comments/`,
+      data: {
+        commentId,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  };
+
+  const handleDelete = () => {
+    mutateDeleteComment(commentId);
+  };
+
   return (
     <div onMouseOver={() => setIsHoverd(true)} onMouseLeave={() => setIsHoverd(false)} className="flex w-full gap-2">
+      <DeleteModal isModalOpen={isModalOpen} onClose={closeModal} onConfirm={handleDelete} item="comment" />
       {isAvatarImageSrcLoading ? (
         <div>Image is loading...</div>
       ) : isAvatarImageSrcSuccsess ? (
@@ -74,14 +110,17 @@ const CommentCard = ({ comment }: CommentCardProps) => {
               <Button onClick={handleUpdate} size="sm" className="mt-0.5 h-fit items-center">
                 <Save className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="mt-0.5 h-fit items-center" onClick={() => setEditComment((prev) => !prev)}>
+              <Button variant="ghost" size="sm" className="mt-0.5 h-fit items-center" onClick={() => setEditComment(false)}>
                 <XCircle className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="mt-0.5 h-fit items-center bg-red-300 hover:bg-red-500" onClick={openModal}>
+                <Trash2 className="h-4 w-4" />
               </Button>
             </>
           ) : (
             <>
               {isHoverd && isCurrentUser ? (
-                <Button onClick={() => setEditComment((prev) => !prev)} variant="ghost" size="sm" className="mt-0.5 h-fit">
+                <Button onClick={() => setEditComment(true)} variant="ghost" size="sm" className="mt-0.5 h-fit">
                   <Pencil className="h-4 w-4" />
                 </Button>
               ) : null}

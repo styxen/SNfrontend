@@ -1,14 +1,16 @@
-import { Heart, HeartCrack, MessageCircle, Pencil, Save, XCircle } from 'lucide-react';
-import { useGlobalContext } from '../context/GlobalContext';
+import { Heart, HeartCrack, MessageCircle, Pencil, Save, XCircle, Trash2 } from 'lucide-react';
+import { useGlobalContext } from '../../context/GlobalContext';
 import { PostData } from './PostsContainer';
 import { useState } from 'react';
-import formatTimesAgo from '../utils/formatTimesAgo';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { axiosRequest } from '../api/axios';
+import formatTimesAgo from '../../utils/formatTimesAgo';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { axiosRequest } from '../../api/axios';
 import PostForm from './PostForm';
 import { Link } from 'react-router-dom';
-import Button from './ui/Button';
-import ComentsContainer from './CommentsContainer';
+import Button from '../ui/Button';
+import ComentsContainer from '../Comment/CommentsContainer';
+import useImage from '../../hooks/useImage';
+import DeleteModal from '../Other/DeleteModal';
 
 type PostCardProps = {
   post: PostData;
@@ -42,7 +44,7 @@ const PostCard = ({ post }: PostCardProps) => {
     profileImageId,
     profileName,
   } = post;
-  const { fetchImage, token, currentUserId } = useGlobalContext();
+  const { token, currentUserId } = useGlobalContext();
   const [postUpdates, setPostUpdates] = useState<PostUpdates>({
     postEdited,
     postContent,
@@ -54,29 +56,38 @@ const PostCard = ({ post }: PostCardProps) => {
   const [isHoverd, setIsHoverd] = useState(false);
   const [editPost, setEditPost] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const {
     data: avatarImageSrc,
     isLoading: isAvatarImageSrcLoading,
     isSuccess: isAvatarImageSrcSuccsess,
-  } = useQuery({
-    queryKey: ['postAvatarImageSrc', postId],
-    queryFn: () => fetchImage({ imageId: profileImageId, imageParams: 'original' }),
-  });
+  } = useImage({ imageId: profileImageId, imageParams: 'original', token });
 
-  const sendLikeMutation = useMutation({
+  const { mutate: mutateLike } = useMutation({
     mutationFn: (method: 'post' | 'delete') => sendLike(method),
   });
 
-  const updatePostMutation = useMutation({
+  const { mutate: mutateUpdatePost } = useMutation({
     mutationFn: (formData: FormData) => updatePost(formData),
+  });
+
+  const { mutate: mutateDeletePost } = useMutation({
+    mutationFn: (postId: string) => deletePost(postId),
+    onSuccess: () => {
+      queryClient.setQueryData(['userPosts', currentUserId], (prev: PostData[]) => prev.filter((prvePost) => prvePost.postId !== postId));
+    },
   });
 
   const handleLike = () => {
     if (likes.isLiked) {
-      sendLikeMutation.mutate('delete');
+      mutateLike('delete');
     } else {
-      sendLikeMutation.mutate('post');
+      mutateLike('post');
     }
   };
 
@@ -101,7 +112,7 @@ const PostCard = ({ post }: PostCardProps) => {
     formData.append('postContent', postUpdates.postContent);
     formData.append('postId', postId);
 
-    updatePostMutation.mutate(formData);
+    mutateUpdatePost(formData);
     setEditPost(false);
   };
 
@@ -120,12 +131,32 @@ const PostCard = ({ post }: PostCardProps) => {
     return response;
   };
 
+  const deletePost = async (postId: string) => {
+    const response = await axiosRequest({
+      method: 'delete',
+      url: `/posts`,
+      data: {
+        postId,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response;
+  };
+
+  const handleDelete = () => {
+    mutateDeletePost(postId);
+  };
+
   return (
     <div
       onMouseOver={() => setIsHoverd(true)}
       onMouseLeave={() => setIsHoverd(false)}
       className="mx-auto grid w-full gap-5 overflow-hidden rounded-2xl bg-white px-8 py-6 shadow-lg"
     >
+      <DeleteModal isModalOpen={isModalOpen} onClose={closeModal} onConfirm={handleDelete} item="post" />
       <div className="flex justify-between">
         <div className="flex items-stretch gap-2">
           {isAvatarImageSrcLoading ? (
@@ -152,6 +183,9 @@ const PostCard = ({ post }: PostCardProps) => {
                 onClick={() => setEditPost((prev) => !prev)}
               >
                 <XCircle />
+              </Button>
+              <Button onClick={openModal} size="sm" className="items-center rounded-full bg-red-300 px-1.5 py-1 hover:bg-red-500">
+                <Trash2 />
               </Button>
             </>
           ) : (

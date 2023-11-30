@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useGlobalContext } from '../context/GlobalContext';
-import { axiosRequest } from '../api/axios';
+import { useGlobalContext } from '../../context/GlobalContext';
+import { axiosRequest } from '../../api/axios';
 import { useEffect, useRef, useState } from 'react';
-import Button from './ui/Button';
+import Button from '../ui/Button';
 import Message from './Message';
 import { Socket } from 'socket.io-client';
 
@@ -24,7 +24,13 @@ export type MessageData = {
 const ChatCard = ({ chatRoomId, wsClient }: ChatCardProps) => {
   const { token, currentUserId } = useGlobalContext();
   const [newMessage, setNewMessage] = useState('');
+  const [selectedMessage, setSelectedMessage] = useState<MessageData | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const selectMessage = (message: MessageData) => {
+    setSelectedMessage(message);
+    setNewMessage(message.messageContent);
+  };
 
   const {
     data: messages,
@@ -59,9 +65,21 @@ const ChatCard = ({ chatRoomId, wsClient }: ChatCardProps) => {
 
   const sendMessage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newMessage) return;
 
-    wsClient.emit('SendMessageEvent', { chatRoomId, userId: currentUserId, messageContent: newMessage });
+    if (!selectedMessage) {
+      wsClient.emit('SendMessageEvent', { chatRoomId, userId: currentUserId, messageContent: newMessage });
+      setNewMessage('');
+      return;
+    }
+
+    wsClient.emit('UpdateMessageEvent', {
+      messageContent: newMessage,
+      chatRoomId,
+      messageId: selectedMessage.messageId,
+      userId: currentUserId,
+    });
+
+    setSelectedMessage(null);
     setNewMessage('');
   };
 
@@ -73,7 +91,7 @@ const ChatCard = ({ chatRoomId, wsClient }: ChatCardProps) => {
         ) : areMessagesSuccess && messages.length > 0 ? (
           <>
             {messages.map((message) => (
-              <Message key={message.messageId} message={message} />
+              <Message key={message.messageId} message={message} selectMessage={selectMessage} />
             ))}
           </>
         ) : (
@@ -88,7 +106,12 @@ const ChatCard = ({ chatRoomId, wsClient }: ChatCardProps) => {
           onChange={(e) => setNewMessage(e.target.value)}
           className="w-full overflow-x-auto rounded-full"
         />
-        <Button className="rounded-full">Send</Button>
+        <Button className="rounded-full">{!selectedMessage ? 'Send' : 'Update'}</Button>
+        {!selectedMessage ? null : (
+          <Button variant="ghost" onClick={() => (setSelectedMessage(null), setNewMessage(''))} className="rounded-full">
+            Cancel
+          </Button>
+        )}
       </form>
     </div>
   );
